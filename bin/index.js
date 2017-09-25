@@ -15,7 +15,7 @@ Jimp.read(source).then(function (input) {
     input.cover(80, 80).write('/Users/juliensanchez/Desktop/DSC_5834_0.png');
     const raw = wheelToRaw(result, parseInt(start), parseInt(def), parseInt(base));
 
-    const wstream = fs.createWriteStream('data');
+    const wstream = fs.createWriteStream('/Users/juliensanchez/Documents/Arduino/led/data/data');
     wstream.write(raw);
     wstream.end();
 

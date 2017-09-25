@@ -1,6 +1,4 @@
-import { imageToWheel, wheelToImage, wheelToText } from './tools';
-import domtoimage from 'dom-to-image';
-require('./style.css');
+import { imageToWheel, wheelToImage, wheelToText, wheelToRaw } from './tools';
 
 class ProcessableImage {
     constructor(imageData) {
@@ -114,10 +112,56 @@ function getOrientation(file, callback) {
   reader.readAsArrayBuffer(file);
 }
 
+const postData = (url, data) => {
+    return new Promise((resolve, reject) => {
+        const http = new XMLHttpRequest();
+        const appendUrl = data ? ('?' + data
+            .reduce((result, value, key) => [...result, `${key}=${value}`], [])
+            .join('&')) : '';
+
+        http.open('POST', url + appendUrl, true);
+        http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+        http.onreadystatechange = function() {//Call a function when the state changes.
+            if (http.readyState == 4 && http.status == 200) {
+                resolve(http.responseText);
+            }
+        }
+
+        http.send();
+    });
+}
+
+const sendAngle = (angles, angle, step) => {
+    const slice = angles.slice(0, step);
+    if (0 === slice.length) {
+        return;
+    }
+
+    return postData('http://192.168.4.1/upload', slice).then((response) => {
+        return sendAngle(angles.slice(step), ++angle, step);
+    });
+}
+
+const contrastImage = (imageData, contrast) => {  // contrast as an integer percent
+    var data = imageData.data;  // original array modified, but canvas not updated
+    contrast *= 2.55; // or *= 255 / 100; scale integer percent to full range
+    var factor = (255 + contrast) / (255.01 - contrast);  //add .1 to avoid /0 error
+
+    for(var i=0;i<data.length;i+=4)  //pixel values in 4-byte blocks (r,g,b,a)
+    {
+        data[i] = factor * (data[i] - 128) + 128;     //r value
+        data[i+1] = factor * (data[i+1] - 128) + 128; //g value
+        data[i+2] = factor * (data[i+2] - 128) + 128; //b value
+
+    }
+    return imageData;  //optional (e.g. for filter function chaining)
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('file').onchange = (event) => {
           getOrientation(event.currentTarget.files[0], function(orientation) {
-            alert('orientation: ' + orientation);
+            //alert('orientation: ' + orientation);
           });
         readFile(event.currentTarget.files[0]).then((image) => {
             const start = 10;
@@ -126,21 +170,42 @@ document.addEventListener('DOMContentLoaded', () => {
             const base = 8;
 
             const processableImage = getDataFromImage(image, (start + length) * 2);
+            const contrastedImage = new ProcessableImage(contrastImage(processableImage.getImageData(), 30));
             const imageResult      = imageToWheel(
-                processableImage,
+                contrastedImage,
+                start,
+                length,
+                def,
+                base,
+                false
+            );
+
+            const raw = wheelToRaw(imageResult, start, def, base);
+
+            const step = 36*2*3;
+
+            postData('http://192.168.4.1/open').then((response) => {
+                sendAngle(raw, 0, step).then(() => {
+                    postData('http://192.168.4.1/close')
+                });
+            });
+
+            console.log(raw.length);
+
+            const imageResult2      = imageToWheel(
+                contrastedImage,
                 start,
                 length,
                 def,
                 base
             );
-            console.log(imageResult);
 
             const renderedImage = wheelToImage(
                 new ProcessableImage(
                     blackImg(image.width, image.height, 2)
                         .getImageData(0, 0, image.width * 2, image.height * 2)
                 ),
-                imageResult,
+                imageResult2,
                 start,
                 length,
                 2,

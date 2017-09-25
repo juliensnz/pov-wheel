@@ -21,8 +21,7 @@ module.exports = {
       {
         test: /\.html$/,
         loader: 'html-loader'
-      },
-      { test: /\.css$/, use: [ 'style-loader', 'css-loader' ] }
+      }
     ]
   },
   output: {
@@ -30,13 +29,13 @@ module.exports = {
     filename: 'bundle.js'
   },
   plugins: [
-    // new UglifyJSPlugin(),
-    // new HtmlWebpackPlugin({
-    //   inject: 'head',
-    //   template: 'src/index.html',
-    //   minify: {},
-    //   inlineSource: '.(js|css)$'
-    // }),
+    new UglifyJSPlugin(),
+    new HtmlWebpackPlugin({
+      inject: 'head',
+      template: 'src/index.html',
+      minify: {},
+      inlineSource: '.(js|css)$'
+    }),
     new HtmlWebpackInlineSourcePlugin()
   ]
 };

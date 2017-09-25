@@ -38,9 +38,10 @@ module.exports.imageToWheel = (image, start, length, def, base, combineColors = 
             };
             const idx = image.getPixelIndex(sample.x, sample.y);
             const multiplier = Math.pow(2, baseColor - base);
-            const red   = Math.floor(image.bitmap.data[idx + 0]/multiplier);
-            const green = Math.floor(image.bitmap.data[idx + 1]/multiplier);
-            const blue  = Math.floor(image.bitmap.data[idx + 2]/multiplier);
+            var red   = Math.floor(image.bitmap.data[idx + 0]/multiplier);
+            var green = Math.floor(image.bitmap.data[idx + 1]/multiplier);
+            var blue  = Math.floor(image.bitmap.data[idx + 2]/multiplier);
+
             if (combineColors) {
                 result[angle/def][distance] = combine(base, red, green, blue);
             } else {
@@ -107,20 +108,19 @@ const int image[${360/def}][${wheel[0].length-start}] = {${result}};`;
 
 
 module.exports.wheelToRaw = (wheel, start, def, base) => {
-    // const step = wheel.length / 4;
-    // let splitWheel = [];
-    // for (let i = 0; i < step; i++) {
-    //     splitWheel.push(wheel[i]);
-    //     splitWheel.push(wheel[i + step]);
-    //     splitWheel.push(wheel[i + 2 * step]);
-    //     splitWheel.push(wheel[i + 3 * step]);
-    // }
+    const step = wheel.length / 4;
+    let splitWheel = [];
+    for (let i = 0; i < wheel.length; i++) {
+        splitWheel.push(wheel[i]);
+        splitWheel.push(wheel[(i + step) % 360]);
+        splitWheel.push(wheel[(i + 2 * step) % 360]);
+        splitWheel.push(wheel[(i + 3 * step) % 360]);
+    }
 
-    const result = wheel
+    const result = splitWheel
         .map(distances => distances.filter(item => item !== null))
         .reduce((result, distances) => {
-            const combinedDistances = distances.filter((color, distance) => start <= distance)
-                .reduce((result, colors) => [...result, ...colors], []);
+            const combinedDistances = distances.reduce((result, colors) => [...result, ...colors], []);
 
             return [...result, ...combinedDistances]
         },[]);
