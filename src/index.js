@@ -33,20 +33,22 @@ const rgbaToInt = function (r, g, b, a) {
     return (r * Math.pow(256, 3)) + (g * Math.pow(256, 2)) + (b * Math.pow(256, 1)) + (a * Math.pow(256, 0));
 }
 
-const blackImg = (width, height, sample) => {
+const blankImg = (width, height, sample) => {
     var canvas = document.createElement('canvas');
     canvas.width = width * sample;
     canvas.height = height * sample;
     var ctx = canvas.getContext('2d');
-    ctx.rect(0, 0, width * sample, height * sample);
-    ctx.fillStyle = 'black';
-    ctx.fill();
+    // ctx.rect(0, 0, width * sample, height * sample);
+    // ctx.fill();
 
     return ctx;
 }
 
 const imageToCanvas = (imageData) => {
     var canvas = document.createElement('canvas');
+    canvas.setAttribute('width', 184);
+    canvas.setAttribute('height', 184);
+
     var ctx = canvas.getContext('2d');
     ctx.putImageData(imageData, 0, 0);
 
@@ -132,14 +134,15 @@ const postData = (url, data) => {
     });
 }
 
-const sendAngle = (angles, angle, step) => {
+const sendAngle = (angles, angle, step, notify) => {
     const slice = angles.slice(0, step);
+    notify(angle);
     if (0 === slice.length) {
         return;
     }
 
     return postData('http://192.168.4.1/upload', slice).then((response) => {
-        return sendAngle(angles.slice(step), ++angle, step);
+        return sendAngle(angles.slice(step), ++angle, step, notify);
     });
 }
 
@@ -157,6 +160,10 @@ const contrastImage = (imageData, contrast) => {  // contrast as an integer perc
     }
     return imageData;  //optional (e.g. for filter function chaining)
 }
+
+document.addEventListener('touchmove', function (event) {
+  if (event.scale !== 1) { event.preventDefault(); }
+}, false);
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('file').onchange = (event) => {
@@ -182,17 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const raw = wheelToRaw(imageResult, start, def, base);
 
-            const step = 36*2*3;
-
-            postData('http://192.168.4.1/open').then((response) => {
-                sendAngle(raw, 0, step).then(() => {
-                    postData('http://192.168.4.1/close')
-                });
-            });
-
-            console.log(raw.length);
-
-            const imageResult2      = imageToWheel(
+            const imageResult2 = imageToWheel(
                 contrastedImage,
                 start,
                 length,
@@ -202,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const renderedImage = wheelToImage(
                 new ProcessableImage(
-                    blackImg(image.width, image.height, 2)
+                    blankImg(image.width, image.height, 2)
                         .getImageData(0, 0, image.width * 2, image.height * 2)
                 ),
                 imageResult2,
@@ -214,7 +211,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 rgbaToInt
             );
 
-            document.getElementById('result').appendChild(imageToCanvas(renderedImage.getImageData()));
+
+            const updateProgress = (progress) => {
+                resultElement.style.webkitMask = `url("data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8' standalone='no'?><!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w-3.org/Graphics/SVG/1.1/DTD/svg11.dtd'><svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='184px' height='184px'><circle cx='92' cy='92' r='${Math.round(progress*92)}' stroke='white' stroke-width='2' fill='white' /></svg>")`;
+            }
+
+            const resultElement = document.getElementById('result');
+            resultElement.innerHTML = '';
+            const canvas = imageToCanvas(renderedImage.getImageData())
+            resultElement.appendChild(canvas);
+            updateProgress(0.1);
+
+            const wheelElement = document.getElementById('wheel_image');
+            wheelElement.style.animationName = 'spin';
+            const step = 36*2*3;
+            const full = raw.length / step;
+
+
+            const notify = (updater) => (progress) => {
+                updater(progress/full);
+            }
+            postData('http://192.168.4.1/open').then((response) => {
+                sendAngle(raw, 0, step, notify(updateProgress)).then(() => {
+                    postData('http://192.168.4.1/close');
+                    wheelElement.style.animationName = '';
+                });
+            });
         });
     };
 });
