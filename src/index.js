@@ -1,4 +1,4 @@
-import { imageToWheel, wheelToImage, wheelToText, wheelToRaw } from './tools';
+import { imageToWheel, wheelToImage, wheelToRaw } from './tools';
 
 class ProcessableImage {
     constructor(imageData) {
@@ -31,29 +31,26 @@ class ProcessableImage {
 
 const rgbaToInt = function (r, g, b, a) {
     return (r * Math.pow(256, 3)) + (g * Math.pow(256, 2)) + (b * Math.pow(256, 1)) + (a * Math.pow(256, 0));
+};
+
+
+const progressUpdater = (canvasElement, wheelElement, size, sample) => (progress) => {
+    wheelElement.style.animationName = progress < 1 ? 'spin' : '';
+    canvasElement.style.webkitMask = `url("data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8' standalone='no'?><!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w-3.org/Graphics/SVG/1.1/DTD/svg11.dtd'><svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='${size*sample}px' height='${size*sample}px'><circle cx='${size}' cy='${size}' r='${Math.round(progress*size)}' stroke='white' stroke-width='2' fill='white' /></svg>")`;
 }
 
-const blankImg = (width, height, sample) => {
-    var canvas = document.createElement('canvas');
-    canvas.width = width * sample;
-    canvas.height = height * sample;
-    var ctx = canvas.getContext('2d');
-    // ctx.rect(0, 0, width * sample, height * sample);
-    // ctx.fill();
+const createCanvas = (size) => (imageData = null) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
 
-    return ctx;
-}
-
-const imageToCanvas = (imageData) => {
-    var canvas = document.createElement('canvas');
-    canvas.setAttribute('width', 184);
-    canvas.setAttribute('height', 184);
-
-    var ctx = canvas.getContext('2d');
-    ctx.putImageData(imageData, 0, 0);
+    const ctx = canvas.getContext('2d');
+    if (null !== imageData) {
+        ctx.putImageData(imageData, 0, 0);
+    }
 
     return canvas;
-}
+};
 
 const readFile = (file) => {
     return new Promise((resolve, reject) => {
@@ -71,8 +68,9 @@ const readFile = (file) => {
 }
 
 const getDataFromImage = (image, size) => {
-    var canvas = document.createElement('canvas');
     const canvasSize = image.height < image.width ? image.height : image.width;
+
+    var canvas = document.createElement('canvas');
     canvas.height = size;
     canvas.width = size;
 
@@ -81,15 +79,14 @@ const getDataFromImage = (image, size) => {
         0, 0, canvasSize, canvasSize,
         0, 0, size, size,
     );
-    ctx.rotate(90*Math.PI/180);
+    ctx.rotate(90 * Math.PI / 180);
 
     return new ProcessableImage(ctx.getImageData(0, 0, image.width, image.height));
 }
 
-function getOrientation(file, callback) {
+const getImageOrientation = (file, callback) => {
   var reader = new FileReader();
   reader.onload = function(e) {
-
     var view = new DataView(e.target.result);
     if (view.getUint16(0, false) != 0xFFD8) return callback(-2);
     var length = view.byteLength, offset = 2;
@@ -109,6 +106,7 @@ function getOrientation(file, callback) {
       else if ((marker & 0xFF00) != 0xFF00) break;
       else offset += view.getUint16(offset, false);
     }
+
     return callback(-1);
   };
   reader.readAsArrayBuffer(file);
@@ -122,9 +120,8 @@ const postData = (url, data) => {
             .join('&')) : '';
 
         http.open('POST', url + appendUrl, true);
-        http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
 
-        http.onreadystatechange = function() {//Call a function when the state changes.
+        http.onreadystatechange = function() {
             if (http.readyState == 4 && http.status == 200) {
                 resolve(http.responseText);
             }
@@ -134,109 +131,108 @@ const postData = (url, data) => {
     });
 }
 
-const sendAngle = (angles, angle, step, notify) => {
+const sendAngle = (url, angles, angle, step, notify) => {
     const slice = angles.slice(0, step);
     notify(angle);
     if (0 === slice.length) {
         return;
     }
 
-    return postData('http://192.168.4.1/upload', slice).then((response) => {
+    return postData('${url}/upload', slice).then((response) => {
         return sendAngle(angles.slice(step), ++angle, step, notify);
     });
 }
 
-const contrastImage = (imageData, contrast) => {  // contrast as an integer percent
-    var data = imageData.data;  // original array modified, but canvas not updated
+const contrastImage = (processableImage, contrast) => {  // contrast as an integer percent
+    var data = processableImage.getImageData().data;  // original array modified, but canvas not updated
     contrast *= 2.55; // or *= 255 / 100; scale integer percent to full range
     var factor = (255 + contrast) / (255.01 - contrast);  //add .1 to avoid /0 error
 
-    for(var i=0;i<data.length;i+=4)  //pixel values in 4-byte blocks (r,g,b,a)
-    {
+    for (var i = 0;i < data.length;i += 4) {
         data[i] = factor * (data[i] - 128) + 128;     //r value
-        data[i+1] = factor * (data[i+1] - 128) + 128; //g value
-        data[i+2] = factor * (data[i+2] - 128) + 128; //b value
+        data[i + 1] = factor * (data[i + 1] - 128) + 128; //g value
+        data[i + 2] = factor * (data[i + 2] - 128) + 128; //b value
 
     }
-    return imageData;  //optional (e.g. for filter function chaining)
+    return processableImage;  //optional (e.g. for filter function chaining)
 }
 
 document.addEventListener('touchmove', function (event) {
   if (event.scale !== 1) { event.preventDefault(); }
 }, false);
 
+const uploadToWheel = (url, wheelData, updateProgress) => {
+    updateProgress(0);
+
+    const step = 36*2*3;
+    const full = wheelData.length / step;
+
+    const notify = (updater) => (progress) => {
+        updater(progress/full);
+    }
+
+    postData(`${url}/open`).then((response) => {
+        sendAngle(`${url}/upload`, wheelData, 0, step, notify(updateProgress)).then(() => {
+            postData(`${url}/close`);
+            updateProgress(1);
+        });
+    });
+}
+
+const handleNewImage = (file) => {
+    getImageOrientation(file, function(orientation) {
+        //alert('orientation: ' + orientation);
+    });
+
+    readFile(file).then((image) => {
+        const start = 10;
+        const length = 36;
+        const def = 1;
+        const sample = 2;
+        const size = image.width;
+
+        const createSquareCanvas = createCanvas(size * sample);
+
+        const processableImage = getDataFromImage(image, (start + length) * sample);
+        const contrastedImage = contrastImage(processableImage, 30);
+
+        const wheelData = imageToWheel(
+            contrastedImage,
+            start,
+            length,
+            def,
+            false
+        );
+
+        const rawWheelData = wheelToRaw(wheelData, start, def);
+        const previewImage = wheelToImage(
+            new ProcessableImage(
+                createSquareCanvas().getContext('2d').getImageData(0, 0, size * sample, size * sample)
+            ),
+            wheelData,
+            start,
+            length,
+            2,
+            def,
+            rgbaToInt
+        );
+
+
+        const resultElement = document.getElementById('result');
+        const wheelElement  = document.getElementById('wheel_image');
+        resultElement.innerHTML = '';
+        const canvas = createSquareCanvas(previewImage.getImageData());
+        resultElement.appendChild(canvas);
+
+        const updateProgress = progressUpdater(resultElement, wheelElement, size, sample);
+
+        uploadToWheel('http://192.168.4.1/', rawWheelData, updateProgress);
+    });
+};
+
+
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('file').onchange = (event) => {
-          getOrientation(event.currentTarget.files[0], function(orientation) {
-            //alert('orientation: ' + orientation);
-          });
-        readFile(event.currentTarget.files[0]).then((image) => {
-            const start = 10;
-            const length = 36;
-            const def = 1;
-            const base = 8;
-
-            const processableImage = getDataFromImage(image, (start + length) * 2);
-            const contrastedImage = new ProcessableImage(contrastImage(processableImage.getImageData(), 30));
-            const imageResult      = imageToWheel(
-                contrastedImage,
-                start,
-                length,
-                def,
-                base,
-                false
-            );
-
-            const raw = wheelToRaw(imageResult, start, def, base);
-
-            const imageResult2 = imageToWheel(
-                contrastedImage,
-                start,
-                length,
-                def,
-                base
-            );
-
-            const renderedImage = wheelToImage(
-                new ProcessableImage(
-                    blankImg(image.width, image.height, 2)
-                        .getImageData(0, 0, image.width * 2, image.height * 2)
-                ),
-                imageResult2,
-                start,
-                length,
-                2,
-                def,
-                base,
-                rgbaToInt
-            );
-
-
-            const updateProgress = (progress) => {
-                resultElement.style.webkitMask = `url("data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8' standalone='no'?><!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w-3.org/Graphics/SVG/1.1/DTD/svg11.dtd'><svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='184px' height='184px'><circle cx='92' cy='92' r='${Math.round(progress*92)}' stroke='white' stroke-width='2' fill='white' /></svg>")`;
-            }
-
-            const resultElement = document.getElementById('result');
-            resultElement.innerHTML = '';
-            const canvas = imageToCanvas(renderedImage.getImageData())
-            resultElement.appendChild(canvas);
-            updateProgress(0.1);
-
-            const wheelElement = document.getElementById('wheel_image');
-            wheelElement.style.animationName = 'spin';
-            const step = 36*2*3;
-            const full = raw.length / step;
-
-
-            const notify = (updater) => (progress) => {
-                updater(progress/full);
-            }
-            postData('http://192.168.4.1/open').then((response) => {
-                sendAngle(raw, 0, step, notify(updateProgress)).then(() => {
-                    postData('http://192.168.4.1/close');
-                    wheelElement.style.animationName = '';
-                });
-            });
-        });
+        handleNewImage(event.currentTarget.files[0]);
     };
 });

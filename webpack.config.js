@@ -29,13 +29,13 @@ module.exports = {
     filename: 'bundle.js'
   },
   plugins: [
-    new UglifyJSPlugin(),
+    // new UglifyJSPlugin(),
     new HtmlWebpackPlugin({
       inject: 'head',
       template: 'src/index.html',
       minify: {},
       inlineSource: '.(js|css)$'
     }),
-    new HtmlWebpackInlineSourcePlugin()
+    // new HtmlWebpackInlineSourcePlugin()
   ]
 };
