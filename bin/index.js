@@ -1,11 +1,6 @@
 const Jimp = require('jimp');
 const fs = require('fs');
 const {imageToWheel, wheelToImage, wheelToText, wheelToRaw} = require('../src/tools');
-// const ledSize = 5;
-// const ledMargin = 2;
-
-// const start = 10;
-// const length = 37;
 
 const [node, bin, source, start, length, def, base] = process.argv;
 

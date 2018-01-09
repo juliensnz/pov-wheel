@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build-dev": "webpack --env.dev --progress",
-    "build-prod": "webpack --env.prod --progress"
+    "build-prod": "webpack --env.prod --progress && rm arduino/data/bundle.js"
   },
   "author": "",
   "license": "ISC",
