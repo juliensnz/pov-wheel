@@ -68,7 +68,7 @@ const readFile = (file) => {
 }
 
 const getDataFromImage = (image, size) => {
-    const canvasSize = image.height < image.width ? image.height : image.width;
+    const canvasSize = Math.min(image.height, image.width);
 
     var canvas = document.createElement('canvas');
     canvas.height = size;
@@ -138,8 +138,8 @@ const sendAngle = (url, angles, angle, step, notify) => {
         return;
     }
 
-    return postData('${url}/upload', slice).then((response) => {
-        return sendAngle(angles.slice(step), ++angle, step, notify);
+    return postData(url, slice).then((response) => {
+        return sendAngle(url, angles.slice(step), ++angle, step, notify);
     });
 }
 
@@ -189,11 +189,11 @@ const handleNewImage = (file) => {
         const length = 36;
         const def = 1;
         const sample = 2;
-        const size = image.width;
+        const size = (start + length) * 2;
 
         const createSquareCanvas = createCanvas(size * sample);
 
-        const processableImage = getDataFromImage(image, (start + length) * sample);
+        const processableImage = getDataFromImage(image, size);
         const contrastedImage = contrastImage(processableImage, 30);
 
         const wheelData = imageToWheel(
@@ -226,7 +226,7 @@ const handleNewImage = (file) => {
 
         const updateProgress = progressUpdater(resultElement, wheelElement, size, sample);
 
-        uploadToWheel('http://192.168.4.1/', rawWheelData, updateProgress);
+        uploadToWheel('http://192.168.4.1', rawWheelData, updateProgress);
     });
 };
 

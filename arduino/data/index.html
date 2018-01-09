@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Wheel updater</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <style>
+      @keyframes spin {
+        0% {
+          -webkit-transform: rotateZ(0deg);
+          transform: rotateZ(0deg);
+        }
+        100% {
+          -webkit-transform: rotateZ(360deg);
+          transform: rotateZ(360deg);
+        }
+      }
+      body {
+        background: black;
+      }
+
+      #page {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+
+      }
+
+      #wheel {
+        margin-top: 50px;
+        position: relative;
+        width: 200px;
+        height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      #wheel svg, #wheel label {
+        width: 200px;
+        height: 200px;
+        position: absolute;
+        top: 0px;
+      }
+
+      #wheel svg {
+        animation-iteration-count: infinite;
+        animation-duration: 3s;
+        animation-timing-function: ease-in-out;
+      }
+
+      #wheel input[type="file"] {
+        display: none;
+      }
+
+      #result {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+      }
+
+      #loading {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        border: 0px solid black;
+        border-radius: 1000px;
+        box-sizing: border-box;
+        width: 180px;
+        height: 180px;
+        overflow: hidden;
+      }
+    </style>
+  <script type="text/javascript">!function(t){function e(r){if(n[r])return n[r].exports;var a=n[r]={i:r,l:!1,exports:{}};return t[r].call(a.exports,a,a.exports,e),a.l=!0,a.exports}var n={};e.m=t,e.c=n,e.d=function(t,n,r){e.o(t,n)||Object.defineProperty(t,n,{configurable:!1,enumerable:!0,get:r})},e.n=function(t){var n=t&&t.__esModule?function(){return t.default}:function(){return t};return e.d(n,"a",n),n},e.o=function(t,e){return Object.prototype.hasOwnProperty.call(t,e)},e.p="",e(e.s=0)}([function(t,e,n){"use strict";function r(t){if(Array.isArray(t)){for(var e=0,n=Array(t.length);e<t.length;e++)n[e]=t[e];return n}return Array.from(t)}function a(t,e){if(!(t instanceof e))throw new TypeError("Cannot call a class as a function")}function o(t,e){var n=new FileReader;n.onload=function(t){var n=new DataView(t.target.result);if(65496!=n.getUint16(0,!1))return e(-2);for(var r=n.byteLength,a=2;a<r;){var o=n.getUint16(a,!1);if(a+=2,65505==o){if(1165519206!=n.getUint32(a+=2,!1))return e(-1);var i=18761==n.getUint16(a+=6,!1);a+=n.getUint32(a+4,i);var u=n.getUint16(a,i);a+=2;for(var c=0;c<u;c++)if(274==n.getUint16(a+12*c,i))return e(n.getUint16(a+12*c+8,i))}else{if(65280!=(65280&o))break;a+=n.getUint16(a,!1)}}return e(-1)},n.readAsArrayBuffer(t)}var i=function(){function t(t,e){for(var n=0;n<e.length;n++){var r=e[n];r.enumerable=r.enumerable||!1,r.configurable=!0,"value"in r&&(r.writable=!0),Object.defineProperty(t,r.key,r)}}return function(e,n,r){return n&&t(e.prototype,n),r&&t(e,r),e}}(),u=n(1),c=function(){function t(e){a(this,t),this.bitmap=e}return i(t,[{key:"getPixelIndex",value:function(t,e){return 4*(this.bitmap.width*e+t)}},{key:"setPixelColor",value:function(t,e,n){var r={red:t>>24&255,green:t>>16&255,blue:t>>8&255,alpha:255&t},a=this.getPixelIndex(e,n);this.bitmap.data[a]=r.red,this.bitmap.data[a+1]=r.green,this.bitmap.data[a+2]=r.blue,this.bitmap.data[a+3]=r.alpha}},{key:"getImageData",value:function(){return this.bitmap}}]),t}(),f=function(t,e,n,r){return t*Math.pow(256,3)+e*Math.pow(256,2)+n*Math.pow(256,1)+r*Math.pow(256,0)},h=function(t,e,n){var r=document.createElement("canvas");return r.width=t*n,r.height=e*n,r.getContext("2d")},l=function(t){var e=document.createElement("canvas");return e.setAttribute("width",184),e.setAttribute("height",184),e.getContext("2d").putImageData(t,0,0),e},s=function(t){return new Promise(function(e,n){var r=new FileReader;r.onload=function(t){var n=document.createElement("img");n.onload=function(){e(n)},n.src=t.target.result},r.readAsDataURL(t)})},g=function(t,e){var n=document.createElement("canvas"),r=t.height<t.width?t.height:t.width;n.height=e,n.width=e;var a=n.getContext("2d");return a.drawImage(t,0,0,r,r,0,0,e,e),a.rotate(90*Math.PI/180),new c(a.getImageData(0,0,t.width,t.height))},d=function(t,e){return new Promise(function(n,a){var o=new XMLHttpRequest,i=e?"?"+e.reduce(function(t,e,n){return[].concat(r(t),[n+"="+e])},[]).join("&"):"";o.open("POST",t+i,!0),o.setRequestHeader("Content-type","application/x-www-form-urlencoded"),o.onreadystatechange=function(){4==o.readyState&&200==o.status&&n(o.responseText)},o.send()})},p=function t(e,n,r,a){var o=e.slice(0,r);if(a(n),0!==o.length)return d("http://192.168.4.1/upload",o).then(function(o){return t(e.slice(r),++n,r,a)})},v=function(t,e){var n=t.data;e*=2.55;for(var r=(255+e)/(255.01-e),a=0;a<n.length;a+=4)n[a]=r*(n[a]-128)+128,n[a+1]=r*(n[a+1]-128)+128,n[a+2]=r*(n[a+2]-128)+128;return t};document.addEventListener("touchmove",function(t){1!==t.scale&&t.preventDefault()},!1),document.addEventListener("DOMContentLoaded",function(){document.getElementById("file").onchange=function(t){o(t.currentTarget.files[0],function(t){}),s(t.currentTarget.files[0]).then(function(t){var e=g(t,92),n=new c(v(e.getImageData(),30)),r=(0,u.imageToWheel)(n,10,36,1,8,!1),a=(0,u.wheelToRaw)(r,10,1,8),o=(0,u.imageToWheel)(n,10,36,1,8),i=(0,u.wheelToImage)(new c(h(t.width,t.height,2).getImageData(0,0,2*t.width,2*t.height)),o,10,36,2,1,8,f),s=function(t){m.style.webkitMask="url(\"data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8' standalone='no'?><!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w-3.org/Graphics/SVG/1.1/DTD/svg11.dtd'><svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='184px' height='184px'><circle cx='92' cy='92' r='"+92*t+"' stroke='white' stroke-width='2' fill='white' /></svg>\")"},m=document.getElementById("result");m.innerHTML="";var w=l(i.getImageData());m.appendChild(w),s(.1);var y=document.getElementById("wheel_image");y.style.animationName="spin";var x=a.length/216,M=function(t){return function(e){t(e/x)}};d("http://192.168.4.1/open").then(function(t){p(a,0,216,M(s)).then(function(){d("http://192.168.4.1/close"),y.style.animationName=""})})})}})},function(t,e,n){"use strict";function r(t){if(Array.isArray(t)){for(var e=0,n=Array(t.length);e<t.length;e++)n[e]=t[e];return n}return Array.from(t)}var a=function(t,e,n,r){return e<<2*t|n<<t|r},o=function(t,e){return{r:e>>2*t,g:(e>>t)%Math.pow(2,t),b:e%Math.pow(2,t)}};t.exports.imageToWheel=function(t,e,n,r,o){for(var i=!(arguments.length>5&&void 0!==arguments[5])||arguments[5],u=[],c={x:e+n,y:e+n},f=0;f<360;f+=r){u[f/r]=[];for(var h=0;h<e;h++)u[f/r].push(null);for(var l=e;l<e+n;l+=1){var s={x:Math.round(Math.cos(f*Math.PI/180)*l+c.x),y:Math.round(Math.sin(f*Math.PI/180)*l+c.y)},g=t.getPixelIndex(s.x,s.y),d=Math.pow(2,8-o),p=Math.floor(t.bitmap.data[g+0]/d),v=Math.floor(t.bitmap.data[g+1]/d),m=Math.floor(t.bitmap.data[g+2]/d);u[f/r][l]=i?a(o,p,v,m):[p,v,m]}}return u},t.exports.wheelToImage=function(t,e,n,r,a,i,u,c){var f=2*(n+r)*a,h={x:f/2,y:f/2};for(var l in e){l=parseInt(l);var s=e[l];for(var g in s){var d={x:Math.floor(a*g*Math.cos(l*i*Math.PI/180)+h.x),y:Math.floor(a*g*Math.sin(l*i*Math.PI/180)+h.y)},p=o(u,s[g]),v=Math.pow(2,8-u);t.setPixelColor(c(p.r*v,p.g*v,p.b*v,255),d.x,d.y)}}return t},t.exports.wheelToText=function(t,e,n,r){var a=!(arguments.length>4&&void 0!==arguments[4])||arguments[4],o=t.filter(function(t){return null!==t}).map(function(t,n){return"{"+t.filter(function(t,n){return e<=n}).map(function(t){return a?t:"{"+t.join(",")+"}"}).join(",")+"}"}).join(",");return"const int base = "+r+";\nconst int def = "+n+";\nconst int mult = "+Math.pow(2,8-r)+";\nconst int image["+360/n+"]["+(t[0].length-e)+"] = {"+o+"};"},t.exports.wheelToRaw=function(t,e,n,a){for(var o=t.length/4,i=[],u=0;u<t.length;u++)i.push(t[u]),i.push(t[(u+o)%360]),i.push(t[(u+2*o)%360]),i.push(t[(u+3*o)%360]);for(var c=i.map(function(t){return t.filter(function(t){return null!==t})}).reduce(function(t,e){var n=e.reduce(function(t,e){return[].concat(r(t),r(e))},[]);return[].concat(r(t),r(n))},[]),f=new ArrayBuffer(c.length),h=new Uint8Array(f),l=0;l<c.length;l++)h[l]=c[l];return h}}]);</script></head>
+  <body>
+    <div id="page">
+      <div id="wheel">
+
+        <svg version="1.1" id="wheel_image" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 200 200" style="enable-background:new 0 0 200 200" xml:space="preserve">
+          <style type="text/css">
+            .st0{fill:none;stroke:#ffffff;stroke-miterlimit:10;}
+          </style>
+          <g>
+            <g>
+              <path class="st0" d="M100,199c-54.6,0-99-44.4-99-99C1,45.4,45.4,1,100,1c54.6,0,99,44.4,99,99C199,154.6,154.6,199,100,199z
+                 M100,9.6C50.1,9.6,9.6,50.1,9.6,100c0,49.9,40.6,90.4,90.4,90.4s90.4-40.6,90.4-90.4C190.4,50.1,149.9,9.6,100,9.6z"/>
+            </g>
+            <line class="st0" x1="111.7" y1="10.1" x2="108.3" y2="98.3"/>
+            <circle class="st0" cx="100" cy="100" r="8.3"/>
+            <circle class="st0" cx="100" cy="100" r="4.2"/>
+            <line class="st0" x1="95.3" y1="93.3" x2="155" y2="28.3"/>
+            <line class="st0" x1="171" y1="44.1" x2="97.2" y2="92.1"/>
+            <line class="st0" x1="189.5" y1="86.9" x2="103.5" y2="107.9"/>
+            <line class="st0" x1="189.7" y1="111.4" x2="102.8" y2="92"/>
+            <line class="st0" x1="172.7" y1="153.8" x2="95.8" y2="107.2"/>
+            <polyline class="st0" points="136.6,182.7 108.3,97.1 183.4,135  "/>
+            <polyline class="st0" points="109.3,190.3 108.3,100 134.8,16.5  "/>
+            <line class="st0" x1="89.4" y1="189.8" x2="91.7" y2="100"/>
+            <line class="st0" x1="65.9" y1="182.7" x2="92.3" y2="96.9"/>
+            <polyline class="st0" points="44.3,170.3 107.4,103.9 183.4,65   "/>
+            <line class="st0" x1="104.5" y1="107.3" x2="27.3" y2="153.8"/>
+            <line class="st0" x1="93.5" y1="94.7" x2="16.5" y2="134.7"/>
+            <line class="st0" x1="10.3" y1="111.4" x2="93.6" y2="94.8"/>
+            <polyline class="st0" points="10.3,88.6 92.1,103.9 156.8,170.3  "/>
+            <line class="st0" x1="16.6" y1="65" x2="95.8" y2="107.5"/>
+            <line class="st0" x1="103.4" y1="92.1" x2="27.3" y2="44.1"/>
+            <line class="st0" x1="44.9" y1="28.3" x2="107.3" y2="95.8"/>
+            <line class="st0" x1="65.2" y1="16.5" x2="92.3" y2="103.1"/>
+            <line class="st0" x1="89.4" y1="9.6" x2="92.3" y2="96.9"/>
+          </g>
+        </svg>
+
+        <div id="result"></div>
+        <label for="file">
+          <input id="file" type="file">
+        </label>
+      </div>
+    </div>
+  </body>
+</html>
