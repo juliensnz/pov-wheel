@@ -45,7 +45,7 @@ module.exports = function(env) {
 
   if (env.prod) {
     config.plugins = [new UglifyJSPlugin(), ...config.plugins, new HtmlWebpackInlineSourcePlugin()];
-    config.output.path = path.resolve(__dirname, 'arduino/data'),
+    config.output.path = path.resolve(__dirname, 'arduino/data');
   }
 
   return config;
